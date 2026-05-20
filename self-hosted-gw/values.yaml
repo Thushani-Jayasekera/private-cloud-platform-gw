@@ -1,0 +1,406 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# API Platform Gateway — Production Values
+# Chart: gateway (v1.2.0)
+#
+# Usage:
+#   helm install ap-gateway oci://ghcr.io/wso2/api-platform/helm-charts/gateway \
+#     --version 1.2.0 \
+#     --namespace ap-gateway \
+#     --create-namespace \
+#     --values kubernetes/production/values-production.yaml \
+#     --wait --timeout 5m
+#
+# Before deploying:
+#   1. Replace every value marked with TODO
+#   2. Create required Kubernetes Secrets (see kubernetes/production/secrets.sh)
+#   3. Confirm gateway.developmentMode is false
+#
+# Reference: docs/gateway/kubernetes/production-deployment-guide.md
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+gateway:
+ # Must be false in production — enforces encryption key and auth requirements.
+ developmentMode: false
+ configMap:
+    annotations: {}
+    labels: {}
+
+
+ # ── Shared config rendered into config.toml ────────────────────────────────
+ config:
+   controller:
+
+
+     # Authentication
+     # Option A (recommended): IDP / OAuth2 — no credentials stored in the cluster.
+     # Option B: Basic auth with bcrypt-hashed passwords (see secrets.sh to generate).
+     auth:
+       basic:
+         enabled: false                        # TODO: set true if not using IDP
+         users:
+           - username: "admin"
+             password: "$2y$05$82mWOdZk3MTCL0Q6CVCnbuhiFp2FZshjLAh1iNTbXatQLZdIFW.rm"  # TODO:never use plain text
+             password_hashed: true
+             roles: ["admin"]
+           - username: "user1"
+             password: "$2y$05$gqED2lmV1rMQQEAolOgLZOQXdSudgucLaI53XCp1XERNNhm29HlOC"  # TODO:never use plain text
+             password_hashed: true
+             roles: ["developer", "consumer"]
+       idp:
+         enabled: false                   # TODO: set false if using basic auth
+         jwks_url: "https://idp.example.com/.well-known/jwks.json"  # TODO
+         issuer: "https://idp.example.com"     # TODO
+         roles_claim: "scope"
+         role_mapping: {}
+
+
+     server:
+       api_port: 9090
+       xds_port: 18000
+       shutdown_timeout: 30s
+       gateway_id: "prod-gateway"  # TODO: unique ID for this gateway instance
+
+
+     policies:
+       definitions_path: ""
+
+     policy_server:
+       port: 18001
+       tls:
+         enabled: false
+         cert_file: ""
+         key_file: ""
+
+
+     # Storage — PostgreSQL is recommended for production (supports multiple replicas).
+     # Switch to type: sqlite for a single-instance deployment with no external DB.
+     storage:
+       type: postgres                          # TODO: or "sqlite" for single-instance
+       sqlite:
+         path: ./data/gateway.db              # ignored when type=postgres
+       postgres:
+         host: "gateway-postgres-postgresql.ap-gateway.svc.cluster.local"
+         port: 5432
+         database: "gateway_controller"
+         user: "gateway"
+         sslmode: disable                     # never "disable" in production
+         connect_timeout: 5s
+         max_open_conns: 10
+         max_idle_conns: 5
+         conn_max_lifetime: 30m
+         conn_max_idle_time: 5m
+         application_name: gateway-controller
+
+
+     controlplane:
+       insecure_skip_verify: true    
+       reconnect_initial: 1s
+       reconnect_max: 5m
+       polling_interval: 15m
+       deployment_push_enabled: false
+       sync_batch_size: 50
+       gateway_name: "prod-gateway" # TODO: friendly name shown in APIM console
+       apim_oauth2_client_id: "v23y_2VNyElhNUyWbVeJP1RfHx0a"
+       apim_oauth2_client_secret: "ZI5G7CPTNM39262qCoh78JecIj0a"
+       apim_oauth2_username: "admin"
+       apim_oauth2_password: "admin"
+
+
+     encryption:
+       providers:
+         - type: aesgcm
+           keys:
+             - version: aesgcm256-v1
+               file: /app/data/aesgcm-keys/default-aesgcm256-v1.bin
+
+
+     logging:
+       level: info
+       format: json
+
+
+   router:
+     gateway_host: "*"
+     access_logs:
+       enabled: true
+       format: json
+     listener_port: 8080
+     https_enabled: true
+     https_port: 8443
+     downstream_tls:
+       cert_path: "./listener-certs/default-listener.crt"
+       key_path: "./listener-certs/default-listener.key"
+       minimum_protocol_version: TLS1_2
+       maximum_protocol_version: TLS1_3
+       ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES128-SHA,ECDHE-RSA-AES128-SHA,AES128-GCM-SHA256,AES128-SHA,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-AES256-SHA,ECDHE-RSA-AES256-SHA,AES256-GCM-SHA384,AES256-SHA"
+
+
+     upstream:
+       tls:
+         minimum_protocol_version: TLS1_2
+         maximum_protocol_version: TLS1_3
+         ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES128-SHA,ECDHE-RSA-AES128-SHA,AES128-GCM-SHA256,AES128-SHA,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-AES256-SHA,ECDHE-RSA-AES256-SHA,AES256-GCM-SHA384,AES256-SHA"
+         trusted_cert_path: /etc/ssl/certs/ca-certificates.crt
+         custom_certs_path: ""
+         verify_host_name: true
+         disable_ssl_verification: false
+       timeouts:
+         route_timeout_ms: 60000
+         route_idle_timeout_ms: 300000
+         connect_timeout_ms: 5000
+     policy_engine:
+       mode: uds
+       timeout_ms: 60000
+       failure_mode_allow: false              # fail closed — deny on policy engine error
+       route_cache_action: RETAIN
+       allow_mode_override: false
+       message_timeout_ms: 60000
+
+
+   policy_engine:
+     server:
+       extproc_port: 9001
+     admin:
+       enabled: true
+       port: 9002
+       allowed_ips:
+         - "*"
+         - "127.0.0.1"
+     config_mode:
+       mode: xds
+     xds:
+       connect_timeout: 10s
+       request_timeout: 5s
+       initial_reconnect_delay: 1s
+       max_reconnect_delay: 60s
+       tls:
+         enabled: false
+     file_config:
+       path: ""
+     logging:
+       level: info
+       format: json
+
+
+ # ── Gateway Controller ─────────────────────────────────────────────────────
+ controller:
+   image:
+     repository: ghcr.io/wso2/api-platform/gateway-controller
+     tag: "1.1.0"                             # TODO: pin to a specific release
+     pullPolicy: IfNotPresent
+
+
+   metrics:
+     port: 9091
+
+   service:
+     type: ClusterIP
+     ports:
+       rest: 9090
+       xds: 18000
+       policy: 18001
+       admin: 9092
+       metrics: 9091
+
+
+   controlPlane:
+     host: "host.docker.internal:9447"
+     port: 9447
+     token:
+       secretName: "gateway-cp-token"         # created by secrets.sh
+       key: token
+
+
+   tls:
+     enabled: true
+     certificateProvider: secret
+     secret:
+        name: gateway-tls
+        certKey: tls.crt
+        keyKey: tls.key
+
+
+   upstreamCerts:
+     enabled: false   # TODO: set true if backends use private CAs
+
+
+   encryptionKeys:
+     enabled: true
+     secretName: "gateway-encryption-keys"   # created by secrets.sh
+     mountPath: /app/data/aesgcm-keys
+
+
+   logging:
+     level: info
+
+
+   storage:
+     type: postgres                           # must match config.controller.storage.type
+     sqlitePath: ./data/gateway.db           # ignored when type=postgres
+
+
+   postgres:
+     passwordSecretRef:
+       name: "gateway-postgres-password"      # created by secrets.sh
+       key: password
+
+
+   persistence:
+     enabled: false        # set true (with storageClass) when type=sqlite
+
+
+   deployment:
+     enabled: true
+     replicaCount: 2    # 2 replicas for HA; requires PostgreSQL (not SQLite)
+     volumeMountPath: /app/data
+     env:
+        gatewayControllerHost: ""
+        logLevel: info
+        moesifKey: ""
+     extraEnv: []
+     extraEnvFrom: []
+     resources:
+       requests:
+         cpu: 250m
+         memory: 256Mi
+       limits:
+         cpu: 500m
+         memory: 512Mi
+     podSecurityContext:
+       runAsNonRoot: true
+       runAsUser: 1000
+     livenessProbe:
+           httpGet:
+             path: /api/admin/v0.9/health
+             port: admin
+           initialDelaySeconds: 10
+           periodSeconds: 10
+           timeoutSeconds: 5
+           failureThreshold: 3
+     readinessProbe:
+           httpGet:
+             path: /api/admin/v0.9/health
+             port: admin
+           initialDelaySeconds: 5
+           periodSeconds: 5
+           timeoutSeconds: 3
+           failureThreshold: 3
+     nodeSelector:
+       workload: gateway
+     tolerations: []
+     affinity:
+       podAntiAffinity:
+         preferredDuringSchedulingIgnoredDuringExecution:
+           - weight: 100
+             podAffinityTerm:
+               labelSelector:
+                 matchLabels:
+                   app.kubernetes.io/component: controller
+               topologyKey: kubernetes.io/hostname
+   hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: ""
+      customMetrics: []
+      behavior: {}
+   podDisruptionBudget:
+      enabled: true
+      minAvailable: 50%
+      maxUnavailable: ""
+
+
+
+ # ── Gateway Runtime ────────────────────────────────────────────────────────
+ gatewayRuntime:
+   image:
+     repository: ghcr.io/wso2/api-platform/gateway-runtime
+     tag: "1.1.0"                             # TODO: pin to a specific release
+     pullPolicy: IfNotPresent
+
+
+   service:
+     type: LoadBalancer
+     annotations: {}                          # TODO: add cloud LB annotations (e.g. AWS NLB)
+     ports:
+       http: 8080
+       https: 8443
+       envoyAdmin: 9901
+       policyEngineAdmin: 9002
+       policyEngineMetrics: 9003
+
+
+   policies:
+     llmPricing:
+       enabled: true
+
+
+   deployment:
+     enabled: true
+     replicaCount: 2                          # minimum 2 for HA; HPA scales beyond this
+     env:
+       logLevel: info
+       moesifKey: ""
+     extraEnv: []
+     extraEnvFrom: []
+     resources:
+       requests:
+         cpu: 500m
+         memory: 512Mi
+       limits:
+         cpu: 2000m
+         memory: 2Gi
+     livenessProbe:
+           exec:
+             command: ["health-check.sh"]
+           initialDelaySeconds: 30
+           periodSeconds: 10
+           timeoutSeconds: 5
+           failureThreshold: 3
+     readinessProbe:
+           exec:
+             command: ["health-check.sh"]
+           initialDelaySeconds: 10
+           periodSeconds: 5
+           timeoutSeconds: 3
+           failureThreshold: 6
+     podSecurityContext:
+       runAsNonRoot: true
+       runAsUser: 1000
+     affinity:
+       podAntiAffinity:
+         preferredDuringSchedulingIgnoredDuringExecution:
+           - weight: 100
+             podAffinityTerm:
+               labelSelector:
+                 matchLabels:
+                   app.kubernetes.io/component: gateway-runtime
+               topologyKey: kubernetes.io/hostname
+     nodeSelector:
+       workload: gateway
+     tolerations: []
+     extraVolumes:
+       - name: api-platform-run
+         emptyDir: {}
+     extraVolumeMounts:
+       - name: api-platform-run
+         mountPath: /var/run/api-platform
+   hpa:
+        enabled: true
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: ""
+        customMetrics: []
+        behavior: {}
+   podDisruptionBudget:
+        enabled: true
+        minAvailable: 50%
+        maxUnavailable: ""
