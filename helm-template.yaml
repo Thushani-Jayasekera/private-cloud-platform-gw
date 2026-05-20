@@ -3,18 +3,18 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: ap-gateway-controller
+  name: my-gateway-controller
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: controller
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: gateway
-      app.kubernetes.io/instance: ap-gateway
+      app.kubernetes.io/instance: my-gateway
       app.kubernetes.io/component: controller
   minAvailable: 50%
 
@@ -23,18 +23,18 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: ap-gateway-gateway-runtime
+  name: my-gateway-gateway-runtime
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: gateway-runtime
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: gateway
-      app.kubernetes.io/instance: ap-gateway
+      app.kubernetes.io/instance: my-gateway
       app.kubernetes.io/component: gateway-runtime
   minAvailable: 50%
 
@@ -43,24 +43,24 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ap-gateway
+  name: my-gateway
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
 
 ---
 # Source: gateway/templates/gateway/gateway-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ap-gateway-config
+  name: my-gateway-config
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
 data:
   config.toml: |
     [controller.server]
@@ -87,7 +87,7 @@ data:
     port = 5432
     database = "gateway_controller"
     user = "gateway"
-    sslmode = "require"
+    sslmode = "disable"
     connect_timeout = "5s"
     max_open_conns = 10
     max_idle_conns = 5
@@ -99,17 +99,17 @@ data:
     definitions_path = ""
 
     [controller.controlplane]
-    insecure_skip_verify = false
+    insecure_skip_verify = true
     reconnect_initial = "1s"
     reconnect_max = "5m"
     polling_interval = "15m"
     deployment_push_enabled = false
     sync_batch_size = 50
     gateway_name = "prod-gateway"
-    apim_oauth2_client_id = ""
-    apim_oauth2_client_secret = ""
-    apim_oauth2_username = ""
-    apim_oauth2_password = ""
+    apim_oauth2_client_id = "v23y_2VNyElhNUyWbVeJP1RfHx0a"
+    apim_oauth2_client_secret = "ZI5G7CPTNM39262qCoh78JecIj0a"
+    apim_oauth2_username = "admin"
+    apim_oauth2_password = "admin"
     [[controller.encryption.providers]]
     type = "aesgcm"
     [[controller.encryption.providers.keys]]
@@ -121,12 +121,12 @@ data:
     listener_port = 8080
     https_enabled = true
     https_port = 8443
-    tracing_service_name = ""
+    tracing_service_name = "router"
 
     [router.access_logs]
     enabled = true
     format = "json"
-    json_fields = { }
+    json_fields = {bytesRx = "%BYTES_RECEIVED%", bytesTx = "%BYTES_SENT%", connTrmDtl = "%CONNECTION_TERMINATION_DETAILS%", dur = "%DURATION%", host = "%REQ(:AUTHORITY)%", meth = "%REQ(:METHOD)%", path = "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%", proto = "%PROTOCOL%", reqId = "%REQ(X-REQUEST-ID)%", respCd = "%RESPONSE_CODE%", respCdDtl = "%RESPONSE_CODE_DETAILS%", respFlg = "%RESPONSE_FLAGS%", t = "%START_TIME%", uHost = "%UPSTREAM_HOST%", uPath = "%REQ(:PATH)%", uProto = "%UPSTREAM_PROTOCOL%", uSvcT = "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%", ua = "%REQ(USER-AGENT)%", xff = "%REQ(X-FORWARDED-FOR)%" }
 
     [router.downstream_tls]
     cert_path = "./listener-certs/default-listener.crt"
@@ -158,6 +158,8 @@ data:
     route_cache_action = "RETAIN"
     allow_mode_override = false
     message_timeout_ms = 60000
+    [router.policy_engine.tls]
+    enabled = false
     [controller.auth.basic]
     enabled = false
     [[controller.auth.basic.users]]
@@ -209,18 +211,21 @@ data:
     format = "json"
     [policy_configurations.llm_cost_v1]
     pricing_file = "/etc/policy-engine/llm-pricing/model_prices.json"
+    [immutable_gateway]
+    enabled = false
+    artifacts_dir = "/etc/api-platform-gateway/immutable_gateway/artifacts"
 
 ---
 # Source: gateway/templates/gateway/gateway-runtime/llm-pricing-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ap-gateway-llm-pricing
+  name: my-gateway-llm-pricing
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
 data:
   model_prices.json: |
     {
@@ -7130,18 +7135,18 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ap-gateway-controller
+  name: my-gateway-controller
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: controller
 spec:
   type: ClusterIP
   selector:
     app.kubernetes.io/name: gateway
-    app.kubernetes.io/instance: ap-gateway
+    app.kubernetes.io/instance: my-gateway
     app.kubernetes.io/component: controller
   ports:
     - name: rest
@@ -7170,12 +7175,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ap-gateway-gateway-runtime
+  name: my-gateway-gateway-runtime
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: gateway-runtime
 spec:
   type: LoadBalancer
@@ -7194,7 +7199,7 @@ spec:
       name: pe-metrics
   selector:
     app.kubernetes.io/name: gateway
-    app.kubernetes.io/instance: ap-gateway
+    app.kubernetes.io/instance: my-gateway
     app.kubernetes.io/component: gateway-runtime
 
 ---
@@ -7202,29 +7207,29 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ap-gateway-controller
+  name: my-gateway-controller
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: controller
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: gateway
-      app.kubernetes.io/instance: ap-gateway
+      app.kubernetes.io/instance: my-gateway
       app.kubernetes.io/component: controller
   template:
     metadata:
       labels:
         app.kubernetes.io/name: gateway
-        app.kubernetes.io/instance: ap-gateway
+        app.kubernetes.io/instance: my-gateway
         app.kubernetes.io/component: controller
       annotations:
-        checksum/config: 476b78711fab1106f5e0b49c1c202b1370a7fe8943df2feef57e4c6e5818669f
+        checksum/config: 36e105eb587d803b308a99d34e80dab4490e270452228dab0bfe0c17019be321
     spec:
-      serviceAccountName: ap-gateway
+      serviceAccountName: my-gateway
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -7248,9 +7253,9 @@ spec:
             - "/etc/gateway-controller/config.toml"
           env:
             - name: APIP_GW_CONTROLPLANE_HOST
-              value: "apim.example.com"
+              value: "host.docker.internal:9447"
             - name: APIP_GW_CONTROLPLANE_PORT
-              value: "8443"
+              value: "9447"
             - name: APIP_GW_GATEWAY_REGISTRATION_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -7263,7 +7268,7 @@ spec:
             - name: APIP_GW_CONTROLLER_STORAGE_SQLITE_PATH
               value: "./data/gateway.db"
             - name: GATEWAY_CONTROLLER_HOST
-              value: "ap-gateway-controller"
+              value: "my-gateway-controller"
             - name: APIP_GW_CONTROLLER_METRICS_PORT
               value: "9091"
             - name: APIP_GW_DEVELOPMENT_MODE
@@ -7329,7 +7334,7 @@ spec:
           emptyDir: {}
         - name: controller-config
           configMap:
-            name: ap-gateway-config
+            name: my-gateway-config
             items:
               - key: config.toml
                 path: config.toml
@@ -7350,29 +7355,29 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ap-gateway-gateway-runtime
+  name: my-gateway-gateway-runtime
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: gateway-runtime
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: gateway
-      app.kubernetes.io/instance: ap-gateway
+      app.kubernetes.io/instance: my-gateway
       app.kubernetes.io/component: gateway-runtime
   template:
     metadata:
       labels:
         app.kubernetes.io/name: gateway
-        app.kubernetes.io/instance: ap-gateway
+        app.kubernetes.io/instance: my-gateway
         app.kubernetes.io/component: gateway-runtime
       annotations:
-        checksum/config: 476b78711fab1106f5e0b49c1c202b1370a7fe8943df2feef57e4c6e5818669f
+        checksum/config: 36e105eb587d803b308a99d34e80dab4490e270452228dab0bfe0c17019be321
     spec:
-      serviceAccountName: ap-gateway
+      serviceAccountName: my-gateway
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -7394,7 +7399,7 @@ spec:
           args: ["--pol.config", "/etc/policy-engine/config.toml"]
           env:
             - name: GATEWAY_CONTROLLER_HOST
-              value: "ap-gateway-controller"
+              value: "my-gateway-controller"
             - name: LOG_LEVEL
               value: "info"
           ports:
@@ -7444,13 +7449,17 @@ spec:
               mountPath: /etc/policy-engine/llm-pricing/model_prices.json
               subPath: model_prices.json
               readOnly: true
+            - mountPath: /var/run/api-platform
+              name: api-platform-run
       volumes:
         - name: gateway-config
           configMap:
-            name: ap-gateway-config
+            name: my-gateway-config
         - name: llm-pricing
           configMap:
-            name: ap-gateway-llm-pricing
+            name: my-gateway-llm-pricing
+        - emptyDir: {}
+          name: api-platform-run
 
 
 ---
@@ -7458,18 +7467,18 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ap-gateway-controller
+  name: my-gateway-controller
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: controller
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ap-gateway-controller
+    name: my-gateway-controller
   minReplicas: 2
   maxReplicas: 5
   metrics:
@@ -7485,18 +7494,18 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ap-gateway-gateway-runtime
+  name: my-gateway-gateway-runtime
   labels:
-    helm.sh/chart: gateway-1.2.0
+    helm.sh/chart: gateway-1.1.1
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: ap-gateway
-    app.kubernetes.io/version: "1.2.0-SNAPSHOT"
+    app.kubernetes.io/instance: my-gateway
+    app.kubernetes.io/version: "1.1.0"
     app.kubernetes.io/component: gateway-runtime
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ap-gateway-gateway-runtime
+    name: my-gateway-gateway-runtime
   minReplicas: 2
   maxReplicas: 5
   metrics:
@@ -7506,3 +7515,5 @@ spec:
         target:
           type: Utilization
           averageUtilization: 80
+
+

@@ -11,12 +11,12 @@ WSO2 API Manager 4.7.0 deployed on a local kind Kubernetes cluster with MySQL as
 ```
 .
 ├── apim-4.7/           # Helm chart values for WSO2 APIM all-in-one deployment
-├── wso2am-custom/      # Custom Docker image and DB init scripts
-│   ├── Dockerfile
-│   ├── mysql.sql       # shared_db schema (REG_* + UM_* tables)
+    ├── mysql.sql       # shared_db schema (REG_* + UM_* tables)
 │   ├── apimgt_mysql.sql # apim_db schema (IDN_* + AM_* tables)
 │   ├── wso2carbon.jks
 │   └── client-truststore.jks
+├── wso2am-custom/      # Custom Docker image and DB init scripts
+│   ├── Dockerfile
 └── self-hosted-gw/     # Self-hosted gateway values
 ```
 
