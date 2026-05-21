@@ -61,29 +61,29 @@ gateway:
 
 
      server:
-       api_port: 9090
-       xds_port: 18000
-       shutdown_timeout: 30s
+      #  api_port: 9090
+      #  xds_port: 18000
+      #  shutdown_timeout: 30s
        gateway_id: "prod-gateway"  # TODO: unique ID for this gateway instance
 
 
      policies:
        definitions_path: ""
 
-     policy_server:
-       port: 18001
-       tls:
-         enabled: false
-         cert_file: ""
-         key_file: ""
+    #  policy_server:
+    #    port: 18001
+      #  tls:
+      #    enabled: false
+      #    cert_file: ""
+      #    key_file: ""
 
 
      # Storage — PostgreSQL is recommended for production (supports multiple replicas).
      # Switch to type: sqlite for a single-instance deployment with no external DB.
      storage:
        type: postgres                          # TODO: or "sqlite" for single-instance
-       sqlite:
-         path: ./data/gateway.db              # ignored when type=postgres
+      #  sqlite:
+      #    path: ./data/gateway.db              # ignored when type=postgres
        postgres:
          host: "gateway-postgres-postgresql.ap-gateway.svc.cluster.local"
          port: 5432
@@ -103,7 +103,7 @@ gateway:
        reconnect_initial: 1s
        reconnect_max: 5m
        polling_interval: 15m
-       deployment_push_enabled: false
+      #  deployment_push_enabled: false
        sync_batch_size: 50
        gateway_name: "prod-gateway" # TODO: friendly name shown in APIM console
        # apim_oauth2_client_id and apim_oauth2_client_secret are injected via
@@ -112,12 +112,12 @@ gateway:
        #                         APIP_GW_CONTROLPLANE_APIM_OAUTH2_CLIENT_SECRET
 
 
-     encryption:
-       providers:
-         - type: aesgcm
-           keys:
-             - version: aesgcm256-v1
-               file: /app/data/aesgcm-keys/default-aesgcm256-v1.bin
+    #  encryption:
+    #    providers:
+    #      - type: aesgcm
+    #        keys:
+    #          - version: aesgcm256-v1
+    #            file: /app/data/aesgcm-keys/default-aesgcm256-v1.bin
 
 
      logging:
@@ -130,12 +130,12 @@ gateway:
      access_logs:
        enabled: true
        format: json
-     listener_port: 8080
+    #  listener_port: 8080
      https_enabled: true
-     https_port: 8443
+    #  https_port: 8443
      downstream_tls:
-       cert_path: "./listener-certs/default-listener.crt"
-       key_path: "./listener-certs/default-listener.key"
+      #  cert_path: "./listener-certs/default-listener.crt"
+      #  key_path: "./listener-certs/default-listener.key"
        minimum_protocol_version: TLS1_2
        maximum_protocol_version: TLS1_3
        ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES128-SHA,ECDHE-RSA-AES128-SHA,AES128-GCM-SHA256,AES128-SHA,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-AES256-SHA,ECDHE-RSA-AES256-SHA,AES256-GCM-SHA384,AES256-SHA"
@@ -154,26 +154,26 @@ gateway:
          route_timeout_ms: 60000
          route_idle_timeout_ms: 300000
          connect_timeout_ms: 5000
-     policy_engine:
-       mode: uds
-       timeout_ms: 60000
-       failure_mode_allow: false              # fail closed — deny on policy engine error
-       route_cache_action: RETAIN
-       allow_mode_override: false
-       message_timeout_ms: 60000
+    #  policy_engine:
+    #    mode: uds
+      #  timeout_ms: 60000
+      #  failure_mode_allow: false              # fail closed — deny on policy engine error
+      #  route_cache_action: RETAIN
+      #  allow_mode_override: false
+      #  message_timeout_ms: 60000
 
 
    policy_engine:
-     server:
-       extproc_port: 9001
+    #  server:
+      #  extproc_port: 9001
      admin:
        enabled: true
        port: 9002
        allowed_ips:
          - "*"
          - "127.0.0.1"
-     config_mode:
-       mode: xds
+    #  config_mode:
+    #    mode: xds
      xds:
        connect_timeout: 10s
        request_timeout: 5s
@@ -203,8 +203,8 @@ gateway:
      type: ClusterIP
      ports:
        rest: 9090
-       xds: 18000
-       policy: 18001
+      #  xds: 18000
+      #  policy: 18001
        admin: 9092
        metrics: 9091
 
@@ -242,7 +242,7 @@ gateway:
 
    storage:
      type: postgres                           # must match config.controller.storage.type
-     sqlitePath: ./data/gateway.db           # ignored when type=postgres
+    #  sqlitePath: ./data/gateway.db           # ignored when type=postgres
 
 
    postgres:
@@ -257,7 +257,7 @@ gateway:
 
    deployment:
      enabled: true
-     replicaCount: 2    # 2 replicas for HA; requires PostgreSQL (not SQLite)
+    #  replicaCount: 2    # 2 replicas for HA; requires PostgreSQL (not SQLite)
      volumeMountPath: /app/data
      env:
         gatewayControllerHost: ""
@@ -334,14 +334,14 @@ gateway:
      ports:
        http: 8080
        https: 8443
-       envoyAdmin: 9901
-       policyEngineAdmin: 9002
+      #  envoyAdmin: 9901
+      #  policyEngineAdmin: 9002
        policyEngineMetrics: 9003
 
 
-   policies:
-     llmPricing:
-       enabled: true
+  #  policies:
+  #    llmPricing:
+  #      enabled: true
 
 
    deployment:
