@@ -42,10 +42,10 @@ gateway:
      # Option B: Basic auth with bcrypt-hashed passwords (see secrets.sh to generate).
      auth:
        basic:
-         enabled: false                        # TODO: set true if not using IDP
+         enabled: true                        # TODO: set true if not using IDP
          users:
            - username: "admin"
-             password: "$2y$05$82mWOdZk3MTCL0Q6CVCnbuhiFp2FZshjLAh1iNTbXatQLZdIFW.rm"  # TODO:never use plain text
+             password: "$2y$05$2UVXrRIRQf1YgCL6KlK.5ebOnBQLMhEwZVphA/BPgoyo37ZdgF1qO"  # TODO:never use plain text
              password_hashed: true
              roles: ["admin"]
            - username: "user1"
