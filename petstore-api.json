@@ -1,0 +1,28 @@
+{
+  "apiVersion": "gateway.api-platform.wso2.com/v1alpha1",
+  "kind": "RestApi",
+  "metadata": {
+    "annotations": {
+      "gateway.api-platform.wso2.com/project-id": "019d953f-d386-7a64-1111-1869a28292e0"
+    },
+    "name": "kitties-api1-v1.0"
+  },
+  "spec": {
+    "displayName": "kitties",
+    "version": "v1.0",
+    "context": "/kitties",
+    "upstream": {
+      "main": {
+        "url": "https://webhook.site/b094a4a6-8fe5-4d2e-a7fd-1921f8fa2d8a"
+      }
+    },
+    "operations": [
+      {"method": "GET", "path": "/pet/{petId}"},
+      {"method": "POST", "path": "/pet"},
+      {"method": "PUT", "path": "/pet"},
+      {"method": "DELETE", "path": "/pet/{petId}"},
+      {"method": "GET", "path": "/store/inventory"},
+      {"method": "POST", "path": "/store/order"}
+    ]
+  }
+}

@@ -106,10 +106,10 @@ gateway:
        deployment_push_enabled: false
        sync_batch_size: 50
        gateway_name: "prod-gateway" # TODO: friendly name shown in APIM console
-       apim_oauth2_client_id: "v23y_2VNyElhNUyWbVeJP1RfHx0a"
-       apim_oauth2_client_secret: "ZI5G7CPTNM39262qCoh78JecIj0a"
-       apim_oauth2_username: "admin"
-       apim_oauth2_password: "admin"
+       # apim_oauth2_client_id and apim_oauth2_client_secret are injected via
+       # the apim-oauth-client-secret-secret Kubernetes Secret (see extraEnvFrom below).
+       # Expected env var names: APIP_GW_CONTROLPLANE_APIM_OAUTH2_CLIENT_ID
+       #                         APIP_GW_CONTROLPLANE_APIM_OAUTH2_CLIENT_SECRET
 
 
      encryption:
@@ -210,8 +210,8 @@ gateway:
 
 
    controlPlane:
-     host: "host.docker.internal:9447"
-     port: 9447
+     host: "apim-wso2am-all-in-one-am-service.apim.svc.cluster.local:9443"
+     port: 9443
      token:
        secretName: "gateway-cp-token"         # created by secrets.sh
        key: token
@@ -264,7 +264,9 @@ gateway:
         logLevel: info
         moesifKey: ""
      extraEnv: []
-     extraEnvFrom: []
+     extraEnvFrom:
+       - secretRef:
+           name: apim-oauth-client-secret-secret
      resources:
        requests:
          cpu: 250m

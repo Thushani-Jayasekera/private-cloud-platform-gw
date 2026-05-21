@@ -1,3 +1,5 @@
+USE shared_db;
+
 CREATE TABLE IF NOT EXISTS REG_CLUSTER_LOCK (
              REG_LOCK_NAME VARCHAR (20),
              REG_LOCK_STATUS VARCHAR (20),
@@ -612,3 +614,7 @@ CREATE TABLE IF NOT EXISTS UM_ORG_HIERARCHY (
 
 INSERT IGNORE INTO UM_ORG_HIERARCHY (UM_PARENT_ID, UM_ID, DEPTH)
 VALUES ('10084a8d-113f-4211-a0d5-efe36b082211', '10084a8d-113f-4211-a0d5-efe36b082211', 0);
+
+-- Pre-seed PRIMARY domain for super tenant to prevent duplicate key errors on APIM restart.
+-- Without this, concurrent threads during startup both see no row and both attempt INSERT.
+INSERT IGNORE INTO UM_DOMAIN (UM_DOMAIN_NAME, UM_TENANT_ID) VALUES ('PRIMARY', -1234);

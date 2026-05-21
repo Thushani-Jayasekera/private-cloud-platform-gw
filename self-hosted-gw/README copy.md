@@ -202,3 +202,11 @@ helm install ap-gateway . \
 ```
 
 Refer to the inline comments inside `values.yaml` for a complete matrix of options and the expected data types for each block.
+
+
+helm uninstall my-gateway -n ap-gateway 
+
+helm install my-gateway oci://ghcr.io/wso2/api-platform/helm-charts/gateway \
+    --version 1.1.1 \
+    --namespace ap-gateway \
+    --values self-hosted-gw/values.yaml

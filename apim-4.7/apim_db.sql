@@ -1,3 +1,5 @@
+USE apim_db;
+
 -- Start of IDENTITY Tables--
 CREATE TABLE IF NOT EXISTS IDN_BASE_TABLE (
             PRODUCT_NAME VARCHAR(20),

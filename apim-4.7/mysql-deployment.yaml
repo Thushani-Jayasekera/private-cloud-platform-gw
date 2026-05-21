@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wso2-mysql-secret
+  namespace: apim
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "root"
+  MYSQL_APIM_PASSWORD: "apimadmin"
+  MYSQL_SHARED_PASSWORD: "sharedadmin"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wso2-mysql-init
+  namespace: apim
+data:
+  00-init.sql: |
+    CREATE DATABASE IF NOT EXISTS apim_db CHARACTER SET latin1;
+    CREATE DATABASE IF NOT EXISTS shared_db CHARACTER SET latin1;
+
+    CREATE USER IF NOT EXISTS 'apimadmin'@'%' IDENTIFIED BY 'apimadmin';
+    GRANT ALL PRIVILEGES ON apim_db.* TO 'apimadmin'@'%';
+
+    CREATE USER IF NOT EXISTS 'sharedadmin'@'%' IDENTIFIED BY 'sharedadmin';
+    GRANT ALL PRIVILEGES ON shared_db.* TO 'sharedadmin'@'%';
+
+    FLUSH PRIVILEGES;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wso2-mysql
+  namespace: apim
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wso2-mysql
+  template:
+    metadata:
+      labels:
+        app: wso2-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wso2-mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 5
+      volumes:
+        - name: mysql-init
+          projected:
+            sources:
+              - configMap:
+                  name: wso2-mysql-init
+              - configMap:
+                  name: wso2-mysql-shared-schema
+              - configMap:
+                  name: wso2-mysql-apim-schema
+        - name: mysql-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wso2-mysql
+  namespace: apim
+spec:
+  selector:
+    app: wso2-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
